@@ -67,74 +67,58 @@ function displayItems() {
             // Determine if the quanity is high enough for purchase
             if (chosenItem.stock_quantity < parseInt(quantity)) {
                 console.log("\n ------------------------------------------------------------------------------------------- \n \n There are not enough inventory of that item. Sorry, you cannot purchase the desired amount. \n \n ------------------------------------------------------------------------------------------- \n");
-                // keepShopping();
+                keepShopping();
             } else  if (chosenItem.stock_quantity >= parseInt(quantity)) {
                 console.log("\n ------------------------------------------------------ \n \n Your total for " + quantity + " items of " + chosenItem.product_name + " is $" + (chosenItem.price * quantity) + ". \n \n ------------------------------------------------------ \n");
                 saleExecution();
             } else {
                 console.log("\n ------------------------------- \n \n Invalid input. Keep shopping. \n \n ------------------------------- \n");
-                // keepShopping();
+                keepShopping();
             }
         });
         }); 
     }
 
+// Run customer transaction
 function saleExecution() {
+    // Ask customer if they would like to purchase product(s)
     inquirer.prompt({
         type: 'list',
         name: 'confirm',
         message: "Would you like to make the purchase?",
         choices: ["Yes", "No"]
-    }).then(answers => {
-        if (answers.confirm === "Yes") {
-            const updateQuery = "UPDATE products SET inventory = inventory -? WHERE item_id = ?";
-            connection.query(updateQuery, [quantity, item], function(err, res) {
-                if(err) throw err;
-                console.log("\n" + "Thank you for your purchase!" + "\n");
-                shopMore();
+    }).then(function(answer) {
+        // Update item quantity in database
+        if (answer.confirm === "Yes") {
+            const updateQuery = "UPDATE products SET stock_quantity = stock_quantity -? WHERE item_id = ?";
+            connection.query(updateQuery, [quantity, item], function(error, response) {
+                if(error) throw error;
+                console.log("\n ------------------------------- \n \n Your transaction has been processed. \n \n ------------------------------- \n");
+                keepShopping();
             });
-        } else if (answers.confirm === "No") {
-            console.log("\n" + "Order cancelled." + "\n");
-            shopMore();
+        } else if (answer.confirm === "No") {
+            // Cancel transaction
+            console.log("\n ------------------------------- \n \n Your transaction has been cancelled. \n \n ------------------------------- \n");
+            keepShopping();
         }
     });
 }
 
-// Once the customer has placed the order: 
-    // Check if your store has enough of the product to meet the customer's request.
+// Allow user to keep shopping
+function keepShopping() {
+    inquirer.prompt([{
+        type: 'list',
+        name: 'keep_shopping',
+        message: "Continue shopping?",
+        choices: ["Yes", "No"]
 
-
-// If not, the app should log a phrase like Insufficient quantity!, and then prevent the order from going through.
-
-
-// However, if your store does have enough of the product, you should fulfill the customer's order.
-    // This means updating the SQL database to reflect the remaining quantity.
-
-    
-// Once the update goes through, show the customer the total cost of their purchase.
-
-
-
-
-
-
-
-
-
-// function keepShopping() {
-//     inquirer.prompt([{
-//         type: 'list',
-//         name: 'shop_more',
-//         message: "Would you like to continue shopping?",
-//         choices: ["Yes", "No"]
-
-//     }]).then(answers => {
-//         if (answers.shop_more === "Yes") {
-//             console.log("Okay! Let's go!");
-//             displayItems();
-//         } else if (answers.shop_more === "No") {
-//            console.log("\n" + "Thank you! Come again soon!");
-//            connection.end(() => {process.exit(); });
-//         }
-//     }); 
-// }
+    }]).then(function(answer) {
+        if (answer.keep_shopping === "Yes") {
+            console.log("\n --------------- \n \n Keep shopping! \n \n --------------- \n");
+            displayItems();
+        } else {
+           console.log("\n --------------- \n \n Good bye. \n \n --------------- \n");
+           connection.end(() => {process.exit(); });
+        }
+    }); 
+}
